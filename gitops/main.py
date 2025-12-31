@@ -32,9 +32,12 @@ IGNORED_FILES = ['.env', '*.env.local', '*.log', 'models/*.pt', 'data/games/*', 
 # Initialize Docker client
 try:
     docker_client = docker.from_env()
-    logger.info("Docker client initialized")
+    # Test connection
+    docker_client.ping()
+    logger.info("Docker client initialized and connected")
 except Exception as e:
-    logger.error(f"Failed to initialize Docker client: {e}")
+    logger.warning(f"Docker client not available: {e}")
+    logger.warning("Auto-deploy will be disabled. Ensure /var/run/docker.sock is mounted.")
     docker_client = None
 
 class GitOpsManager:
@@ -151,13 +154,17 @@ class GitOpsManager:
             for line in result.stdout.strip().split('\n'):
                 if not line:
                     continue
-                # Format: "XY filename"
-                status = line[:2]
-                filepath = line[3:]
-                
-                # Skip ignored patterns
-                if not any(self._matches_pattern(filepath, pattern) for pattern in IGNORED_FILES):
-                    changed_files.append(filepath)
+                # Format: "XY filename" or "XY filename -> newname"
+                # Skip the status prefix (first 3 characters: XY and space)
+                if len(line) > 3:
+                    filepath = line[3:].strip()
+                    # Handle renames (A -> B format)
+                    if ' -> ' in filepath:
+                        filepath = filepath.split(' -> ')[1]
+                    
+                    # Skip ignored patterns
+                    if not any(self._matches_pattern(filepath, pattern) for pattern in IGNORED_FILES):
+                        changed_files.append(filepath)
             
             if not changed_files:
                 logger.info("No changes to commit (all ignored)")
@@ -167,12 +174,17 @@ class GitOpsManager:
             
             # Stage files using subprocess
             for file in changed_files:
-                subprocess.run(
-                    ["git", "add", file],
-                    cwd=self.repo_path,
-                    check=True,
-                    capture_output=True
-                )
+                try:
+                    subprocess.run(
+                        ["git", "add", file],
+                        cwd=self.repo_path,
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                except subprocess.CalledProcessError as e:
+                    logger.warning(f"Failed to add file {file}: {e.stderr}")
+                    continue
             
             # Generate commit message if not provided
             if not message:
@@ -276,11 +288,15 @@ class GitOpsManager:
 class DeploymentManager:
     def __init__(self):
         self.client = docker_client
+        if not self.client:
+            logger.warning("DeploymentManager initialized without Docker client")
     
     def rebuild_and_deploy(self) -> bool:
         """Rebuild and redeploy services"""
         if not self.client:
-            logger.error("Docker client not available")
+            logger.error("Docker client not available - skipping deploy")
+            logger.info("To enable auto-deploy, ensure Docker socket is mounted with correct permissions")
+            logger.info("Add to docker-compose.yml: volumes: - /var/run/docker.sock:/var/run/docker.sock")
             return False
         
         try:
@@ -355,6 +371,20 @@ def main():
     logger.info(f"Auto-deploy: {ENABLE_AUTO_DEPLOY}")
     logger.info(f"Auto-commit: {ENABLE_AUTO_COMMIT}")
     logger.info(f"Auto-push: {ENABLE_AUTO_PUSH}")
+    
+    # Check Docker socket permissions
+    import os
+    docker_socket = "/var/run/docker.sock"
+    if os.path.exists(docker_socket):
+        logger.info(f"Docker socket found: {docker_socket}")
+        try:
+            stat_info = os.stat(docker_socket)
+            logger.info(f"Docker socket permissions: {oct(stat_info.st_mode)}")
+        except Exception as e:
+            logger.warning(f"Cannot check Docker socket permissions: {e}")
+    else:
+        logger.warning(f"Docker socket not found at {docker_socket}")
+        logger.warning("Auto-deploy will not work without Docker socket access")
     
     gitops = GitOpsManager(REPO_PATH)
     deploy = DeploymentManager()
