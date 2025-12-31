@@ -91,6 +91,9 @@
 
 .charts-section {
   margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .chart-card {
@@ -100,6 +103,63 @@
 .chart-card h3 {
   color: #94a3b8;
   margin-bottom: 1rem;
+}
+
+.logs-container {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.logs-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logs-container::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.no-logs {
+  text-align: center;
+  color: #64748b;
+  padding: 2rem;
+}
+
+.log-entry {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+  display: flex;
+  gap: 1rem;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-time {
+  color: #64748b;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.log-message {
+  color: #cbd5e1;
+  flex: 1;
 }
 
 .games-section {
@@ -187,5 +247,9 @@
   
   .stat-value {
     font-size: 1.5rem;
+  }
+  
+  .charts-section {
+    grid-template-columns: 1fr;
   }
 }

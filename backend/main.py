@@ -358,22 +358,26 @@ async def websocket_training(websocket: WebSocket):
 
 # Background task simulator (will be replaced by actual trainer events)
 async def simulate_training_events():
-    """Simulate training events for development"""
+    """Read and broadcast trainer events"""
     await asyncio.sleep(5)  # Wait for startup
     
+    event_file = Path("/data/metrics/latest_event.json")
+    last_event = None
+    
     while True:
-        await asyncio.sleep(10)
+        await asyncio.sleep(1)  # Check every second
         
-        # Broadcast dummy training metrics
-        await manager.broadcast({
-            "type": "metrics",
-            "data": {
-                "policy_loss": 2.5,
-                "value_loss": 0.8,
-                "iteration": 100,
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        })
+        try:
+            if event_file.exists():
+                with open(event_file, 'r') as f:
+                    event = json.load(f)
+                
+                # Only broadcast if it's a new event
+                if event != last_event:
+                    await manager.broadcast(event)
+                    last_event = event
+        except Exception as e:
+            logger.error(f"Error reading trainer events: {e}")
 
 @app.on_event("startup")
 async def startup_event():

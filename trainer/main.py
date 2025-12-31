@@ -377,6 +377,21 @@ def train_network(model, optimizer, scaler, examples, batch_size=256):
     
     return total_policy_loss / num_batches, total_value_loss / num_batches
 
+# Event writer for live updates
+def write_training_event(event_type: str, data: dict):
+    """Write training event to file for backend to stream"""
+    try:
+        event_file = DATA_DIR / "metrics" / "latest_event.json"
+        event = {
+            "type": event_type,
+            "data": data,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        with open(event_file, "w") as f:
+            json.dump(event, f)
+    except Exception as e:
+        logger.error(f"Failed to write event: {e}")
+
 # Main training loop
 def main():
     logger.info("Starting AutoGrandmaster Trainer")
@@ -418,9 +433,11 @@ def main():
     # Training loop
     for iteration in range(iteration_offset, ITERATIONS):
         logger.info(f"\n=== Iteration {iteration + 1}/{ITERATIONS} ===")
+        write_training_event("log", {"message": f"Starting iteration {iteration + 1}/{ITERATIONS}"})
         
         # Self-play
         logger.info(f"Starting self-play: {SELF_PLAY_GAMES} games")
+        write_training_event("log", {"message": f"Self-play: {SELF_PLAY_GAMES} games"})
         all_examples = []
         results = {"1-0": 0, "0-1": 0, "1/2-1/2": 0}
         
@@ -432,15 +449,25 @@ def main():
             
             if (game_num + 1) % 10 == 0:
                 logger.info(f"  Completed {game_num + 1}/{SELF_PLAY_GAMES} games")
+                write_training_event("log", {"message": f"Completed {game_num + 1}/{SELF_PLAY_GAMES} games"})
         
         elapsed = time.time() - start_time
         logger.info(f"Self-play completed in {elapsed:.1f}s ({len(all_examples)} examples)")
         logger.info(f"Results: W={results['1-0']}, L={results['0-1']}, D={results['1/2-1/2']}")
         
+        write_training_event("log", {
+            "message": f"Self-play done: {elapsed:.1f}s, {len(all_examples)} examples, W/D/L={results['1-0']}/{results['1/2-1/2']}/{results['0-1']}"
+        })
+        
         # Training
         logger.info("Training network...")
+        write_training_event("log", {"message": "Training neural network..."})
         policy_loss, value_loss = train_network(model, optimizer, scaler, all_examples, BATCH_SIZE)
         logger.info(f"Policy Loss: {policy_loss:.4f}, Value Loss: {value_loss:.4f}")
+        
+        write_training_event("log", {
+            "message": f"Training complete - Policy Loss: {policy_loss:.4f}, Value Loss: {value_loss:.4f}"
+        })
         
         # Save metrics
         metrics = {
@@ -452,6 +479,8 @@ def main():
             "results": results,
             "timestamp": datetime.utcnow().isoformat()
         }
+        
+        write_training_event("metrics", metrics)
         
         metrics_file = DATA_DIR / "metrics" / f"metrics_{iteration + 1:05d}.json"
         with open(metrics_file, "w") as f:
@@ -466,6 +495,7 @@ def main():
                 'iteration': iteration + 1,
             }, checkpoint_path)
             logger.info(f"Saved checkpoint: {checkpoint_path}")
+            write_training_event("log", {"message": f"Checkpoint saved: model_{iteration + 1:05d}.pt"})
     
     logger.info("Training completed!")
 

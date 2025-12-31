@@ -10,6 +10,7 @@ function TrainingView() {
   const [isTraining, setIsTraining] = useState(false)
   const [metrics, setMetrics] = useState([])
   const [liveGames, setLiveGames] = useState([])
+  const [logs, setLogs] = useState([])
   const [currentModel, setCurrentModel] = useState('model_00001')
   const [stats, setStats] = useState({
     iteration: 0,
@@ -31,6 +32,13 @@ function TrainingView() {
       
       if (message.type === 'training_status') {
         setIsTraining(message.data.is_running)
+      } else if (message.type === 'log') {
+        // Add log message
+        const logEntry = {
+          message: message.data.message,
+          timestamp: message.timestamp || new Date().toISOString()
+        }
+        setLogs(prev => [...prev.slice(-100), logEntry])  // Keep last 100 logs
       } else if (message.type === 'metrics') {
         const newMetric = {
           iteration: message.data.iteration,
@@ -44,7 +52,7 @@ function TrainingView() {
           iteration: message.data.iteration,
           policyLoss: message.data.policy_loss,
           valueLoss: message.data.value_loss,
-          gamesPlayed: stats.gamesPlayed + 1
+          gamesPlayed: message.data.self_play_games || stats.gamesPlayed
         })
       } else if (message.type === 'game') {
         setLiveGames(prev => [message.data, ...prev.slice(0, 9)])
@@ -166,6 +174,22 @@ function TrainingView() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+        
+        <div className="card chart-card">
+          <h3>Live Training Logs</h3>
+          <div className="logs-container">
+            {logs.length === 0 ? (
+              <p className="no-logs">Waiting for training to start...</p>
+            ) : (
+              logs.slice().reverse().map((log, index) => (
+                <div key={index} className="log-entry">
+                  <span className="log-time">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                  <span className="log-message">{log.message}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
       
