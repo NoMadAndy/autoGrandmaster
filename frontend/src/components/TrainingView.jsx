@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import '../styles/TrainingView.css'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8001'
 
 function TrainingView() {
   const [isConnected, setIsConnected] = useState(false)
+  const [isTraining, setIsTraining] = useState(false)
   const [metrics, setMetrics] = useState([])
   const [liveGames, setLiveGames] = useState([])
   const [currentModel, setCurrentModel] = useState('model_00001')
@@ -27,7 +29,9 @@ function TrainingView() {
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data)
       
-      if (message.type === 'metrics') {
+      if (message.type === 'training_status') {
+        setIsTraining(message.data.is_running)
+      } else if (message.type === 'metrics') {
         const newMetric = {
           iteration: message.data.iteration,
           policyLoss: message.data.policy_loss,
@@ -61,13 +65,52 @@ function TrainingView() {
     }
   }, [])
 
+  const startTraining = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/training/start`, {
+        method: 'POST'
+      })
+      const data = await response.json()
+      if (data.status === 'started' || data.status === 'already_running') {
+        setIsTraining(true)
+      }
+    } catch (error) {
+      console.error('Failed to start training:', error)
+    }
+  }
+
+  const stopTraining = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/training/stop`, {
+        method: 'POST'
+      })
+      const data = await response.json()
+      if (data.status === 'stopped' || data.status === 'not_running') {
+        setIsTraining(false)
+      }
+    } catch (error) {
+      console.error('Failed to stop training:', error)
+    }
+  }
+
   return (
     <div className="training-view">
       <div className="training-header">
         <h1>Training Dashboard</h1>
-        <div className="connection-status">
-          <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></span>
-          {isConnected ? 'Connected' : 'Disconnected'}
+        <div className="header-controls">
+          {isTraining ? (
+            <button className="button button-danger" onClick={stopTraining}>
+              ⏹ Stop Training
+            </button>
+          ) : (
+            <button className="button" onClick={startTraining}>
+              ▶ Start Training
+            </button>
+          )}
+          <div className="connection-status">
+            <span className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></span>
+            {isConnected ? 'Connected' : 'Disconnected'}
+          </div>
         </div>
       </div>
       

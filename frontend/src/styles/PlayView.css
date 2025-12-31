@@ -1,5 +1,54 @@
 .play-view {
   width: 100%;
+  position: relative;
+}
+
+.promotion-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.promotion-dialog {
+  background: rgba(30, 41, 59, 0.95);
+  border: 2px solid #3b82f6;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.promotion-dialog h3 {
+  color: #60a5fa;
+  margin-bottom: 1.5rem;
+}
+
+.promotion-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.promotion-button {
+  background: rgba(59, 130, 246, 0.2);
+  border: 2px solid #3b82f6;
+  color: #f1f5f9;
+  padding: 1rem 1.5rem;
+  font-size: 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.promotion-button:hover {
+  background: rgba(59, 130, 246, 0.4);
+  transform: scale(1.05);
 }
 
 .play-container {

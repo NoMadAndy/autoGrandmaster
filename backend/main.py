@@ -65,6 +65,10 @@ models_store = {
     ]
 }
 replays_store: List[Dict[str, Any]] = []
+training_state = {
+    "is_running": False,
+    "iteration": 0
+}
 
 # Pydantic Models
 class NewGameRequest(BaseModel):
@@ -72,6 +76,7 @@ class NewGameRequest(BaseModel):
 
 class MakeMoveRequest(BaseModel):
     move: str
+    promotion: Optional[str] = "q"  # Default to queen
 
 class GameState(BaseModel):
     game_id: str
@@ -158,9 +163,20 @@ async def make_move(game_id: str, request: MakeMoveRequest):
         if move not in board.legal_moves:
             raise HTTPException(status_code=400, detail="Illegal move")
         
+        # Handle pawn promotion
+        piece = board.piece_at(move.from_square)
+        if piece and piece.piece_type == chess.PAWN:
+            # Check if move is to last rank
+            to_rank = chess.square_rank(move.to_square)
+            if (piece.color == chess.WHITE and to_rank == 7) or (piece.color == chess.BLACK and to_rank == 0):
+                # Add promotion piece
+                promotion_map = {"q": chess.QUEEN, "r": chess.ROOK, "b": chess.BISHOP, "n": chess.KNIGHT}
+                promotion_piece = promotion_map.get(request.promotion, chess.QUEEN)
+                move = chess.Move(move.from_square, move.to_square, promotion=promotion_piece)
+        
         board.push(move)
-        game["moves"].append(request.move)
-        logger.info(f"Move made in {game_id}: {request.move}")
+        game["moves"].append(move.uci())
+        logger.info(f"Move made in {game_id}: {move.uci()}")
         
         # AI response (dummy for now - will be replaced with actual AI)
         if not board.is_game_over():
@@ -259,6 +275,49 @@ async def get_changelog():
             return {"entries": entries[:10]}  # Return last 10 entries
     except FileNotFoundError:
         return {"entries": []}
+
+# Training control endpoints
+@app.post("/api/training/start")
+async def start_training():
+    """Start training process"""
+    if training_state["is_running"]:
+        return {"status": "already_running", "message": "Training is already running"}
+    
+    training_state["is_running"] = True
+    logger.info("Training started")
+    
+    # Broadcast to WebSocket clients
+    await manager.broadcast({
+        "type": "training_status",
+        "data": {"is_running": True, "timestamp": datetime.utcnow().isoformat()}
+    })
+    
+    return {"status": "started", "message": "Training started successfully"}
+
+@app.post("/api/training/stop")
+async def stop_training():
+    """Stop training process"""
+    if not training_state["is_running"]:
+        return {"status": "not_running", "message": "Training is not running"}
+    
+    training_state["is_running"] = False
+    logger.info("Training stopped")
+    
+    # Broadcast to WebSocket clients
+    await manager.broadcast({
+        "type": "training_status",
+        "data": {"is_running": False, "timestamp": datetime.utcnow().isoformat()}
+    })
+    
+    return {"status": "stopped", "message": "Training stopped successfully"}
+
+@app.get("/api/training/status")
+async def get_training_status():
+    """Get current training status"""
+    return {
+        "is_running": training_state["is_running"],
+        "iteration": training_state["iteration"]
+    }
 
 # WebSocket for training events
 @app.websocket("/ws/training")
