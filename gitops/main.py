@@ -44,6 +44,13 @@ class GitOpsManager:
         self.last_commit = None
         
         try:
+            # Configure git to trust the repository
+            subprocess.run(
+                ["git", "config", "--global", "--add", "safe.directory", str(repo_path)],
+                check=True,
+                capture_output=True
+            )
+            
             self.repo = git.Repo(repo_path)
             logger.info(f"Git repository initialized at: {repo_path}")
             
@@ -105,8 +112,17 @@ class GitOpsManager:
             return False
         
         try:
-            # Check for untracked files and modified files
-            return self.repo.is_dirty() or len(self.repo.untracked_files) > 0
+            # Use subprocess instead of GitPython for better compatibility
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            # If output is not empty, there are changes
+            return bool(result.stdout.strip())
         except Exception as e:
             logger.error(f"Failed to check local changes: {e}")
             return False
@@ -122,45 +138,73 @@ class GitOpsManager:
                 logger.info("No local changes to commit")
                 return False
             
-            # Get list of changed files (excluding ignored patterns)
+            # Get list of changed files using git status
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
             changed_files = []
-            
-            # Add modified tracked files
-            for item in self.repo.index.diff(None):
-                if not any(self._matches_pattern(item.a_path, pattern) for pattern in IGNORED_FILES):
-                    changed_files.append(item.a_path)
-            
-            # Add untracked files
-            for file in self.repo.untracked_files:
-                if not any(self._matches_pattern(file, pattern) for pattern in IGNORED_FILES):
-                    changed_files.append(file)
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+                # Format: "XY filename"
+                status = line[:2]
+                filepath = line[3:]
+                
+                # Skip ignored patterns
+                if not any(self._matches_pattern(filepath, pattern) for pattern in IGNORED_FILES):
+                    changed_files.append(filepath)
             
             if not changed_files:
                 logger.info("No changes to commit (all ignored)")
                 return False
             
             logger.info(f"Staging {len(changed_files)} files...")
+            
+            # Stage files using subprocess
             for file in changed_files:
-                self.repo.index.add([file])
+                subprocess.run(
+                    ["git", "add", file],
+                    cwd=self.repo_path,
+                    check=True,
+                    capture_output=True
+                )
             
             # Generate commit message if not provided
             if not message:
                 message = self._generate_commit_message(changed_files)
             
-            # Commit
-            commit = self.repo.index.commit(message)
-            logger.info(f"Committed: {commit.hexsha[:8]} - {message}")
+            # Commit using subprocess
+            subprocess.run(
+                ["git", "commit", "-m", message],
+                cwd=self.repo_path,
+                check=True,
+                capture_output=True
+            )
+            
+            logger.info(f"Committed: {message}")
             
             # Push if enabled
             if ENABLE_AUTO_PUSH:
                 logger.info("Pushing to remote...")
-                origin = self.repo.remotes.origin
-                origin.push()
+                subprocess.run(
+                    ["git", "push"],
+                    cwd=self.repo_path,
+                    check=True,
+                    capture_output=True
+                )
                 logger.info("Push completed")
             else:
                 logger.info("Auto-push disabled, skipping push")
             
             return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Git command failed: {e.stderr if e.stderr else str(e)}")
+            return False
         except Exception as e:
             logger.error(f"Failed to commit/push changes: {e}")
             return False

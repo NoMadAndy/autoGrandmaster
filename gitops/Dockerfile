@@ -16,5 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY . .
 
+# Configure git to trust the repository
+RUN git config --global --add safe.directory /repo
+
 # Run gitops service
 CMD ["python", "-u", "main.py"]
