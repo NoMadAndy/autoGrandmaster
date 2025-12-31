@@ -16,10 +16,17 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="AutoGrandmaster API", version="1.0.0")
 
 # CORS
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3001").split(",")
+# Add both localhost and 127.0.0.1 variants
+all_origins = cors_origins + [
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001"
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=all_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
