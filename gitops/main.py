@@ -172,8 +172,15 @@ class GitOpsManager:
             
             logger.info(f"Staging {len(changed_files)} files...")
             
-            # Stage files using subprocess
+            # Stage files using subprocess and track successful adds
+            successfully_added = []
             for file in changed_files:
+                # Check if file exists
+                file_path = self.repo_path / file
+                if not file_path.exists():
+                    logger.warning(f"File does not exist, skipping: {file}")
+                    continue
+                
                 try:
                     subprocess.run(
                         ["git", "add", file],
@@ -182,34 +189,52 @@ class GitOpsManager:
                         capture_output=True,
                         text=True
                     )
+                    successfully_added.append(file)
                 except subprocess.CalledProcessError as e:
                     logger.warning(f"Failed to add file {file}: {e.stderr}")
                     continue
             
+            if not successfully_added:
+                logger.info("No files were successfully staged")
+                return False
+            
+            logger.info(f"Successfully staged {len(successfully_added)} files")
+            
+            logger.info(f"Successfully staged {len(successfully_added)} files")
+            
             # Generate commit message if not provided
             if not message:
-                message = self._generate_commit_message(changed_files)
+                message = self._generate_commit_message(successfully_added)
             
             # Commit using subprocess
-            subprocess.run(
-                ["git", "commit", "-m", message],
-                cwd=self.repo_path,
-                check=True,
-                capture_output=True
-            )
-            
-            logger.info(f"Committed: {message}")
+            try:
+                result = subprocess.run(
+                    ["git", "commit", "-m", message],
+                    cwd=self.repo_path,
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                logger.info(f"Committed: {message}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Commit failed: {e.stderr}")
+                return False
             
             # Push if enabled
             if ENABLE_AUTO_PUSH:
                 logger.info("Pushing to remote...")
-                subprocess.run(
-                    ["git", "push"],
-                    cwd=self.repo_path,
-                    check=True,
-                    capture_output=True
-                )
-                logger.info("Push completed")
+                try:
+                    subprocess.run(
+                        ["git", "push"],
+                        cwd=self.repo_path,
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    logger.info("Push completed")
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"Push failed: {e.stderr}")
+                    return False
             else:
                 logger.info("Auto-push disabled, skipping push")
             
