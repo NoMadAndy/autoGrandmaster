@@ -5,15 +5,15 @@ services:
       dockerfile: Dockerfile
     container_name: autograndmaster-backend
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8001}:8000"
     volumes:
       - ./backend:/app
       - shared-models:/models
       - shared-data:/data
     environment:
       - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
-      - BACKEND_PORT=${BACKEND_PORT:-8000}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - BACKEND_PORT=8000
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3001}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/autograndmaster.db}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
@@ -62,10 +62,10 @@ services:
       dockerfile: Dockerfile
     container_name: autograndmaster-frontend
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3001}:80"
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
-      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8000}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8001}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8001}
     networks:
       - autograndmaster-net
     restart: unless-stopped
