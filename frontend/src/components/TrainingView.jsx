@@ -23,12 +23,13 @@ function TrainingView() {
     const ws = new WebSocket(`${WS_URL}/ws/training`)
     
     ws.onopen = () => {
-      console.log('WebSocket connected')
+      console.log('WebSocket connected to:', `${WS_URL}/ws/training`)
       setIsConnected(true)
     }
     
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data)
+      console.log('Received message:', message.type, message)
       
       if (message.type === 'training_status') {
         setIsTraining(message.data.is_running)

@@ -1,5 +1,7 @@
 import os
 import logging
+import time
+from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -364,6 +366,8 @@ async def simulate_training_events():
     event_file = Path("/data/metrics/latest_event.json")
     last_event = None
     
+    logger.info(f"Starting event reader, watching: {event_file}")
+    
     while True:
         await asyncio.sleep(1)  # Check every second
         
@@ -374,8 +378,13 @@ async def simulate_training_events():
                 
                 # Only broadcast if it's a new event
                 if event != last_event:
+                    logger.debug(f"Broadcasting event: {event.get('type')}")
                     await manager.broadcast(event)
                     last_event = event
+            else:
+                # Log once every 10 seconds if file doesn't exist
+                if int(time.time()) % 10 == 0:
+                    logger.debug(f"Event file does not exist yet: {event_file}")
         except Exception as e:
             logger.error(f"Error reading trainer events: {e}")
 

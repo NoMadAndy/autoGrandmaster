@@ -396,6 +396,10 @@ def write_training_event(event_type: str, data: dict):
 def main():
     logger.info("Starting AutoGrandmaster Trainer")
     logger.info(f"Configuration: Batch={BATCH_SIZE}, Iterations={ITERATIONS}, Self-play games={SELF_PLAY_GAMES}")
+    logger.info(f"Writing events to: {DATA_DIR / 'metrics' / 'latest_event.json'}")
+    
+    # Write startup event
+    write_training_event("log", {"message": "Trainer starting up..."})
     
     # Initialize model
     model = ChessNet(num_res_blocks=5, channels=128).to(DEVICE)  # Smaller for faster training
@@ -427,6 +431,7 @@ def main():
             'iteration': 0,
         }, checkpoint_path)
         logger.info(f"Saved initial model: {checkpoint_path}")
+        write_training_event("log", {"message": f"Initial model saved: {checkpoint_path.name}"})
     
     mcts = MCTS(model, simulations=MCTS_SIMULATIONS, cpuct=CPUCT)
     
