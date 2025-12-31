@@ -1,0 +1,167 @@
+.replay-view {
+  width: 100%;
+}
+
+.replay-view h1 {
+  color: #60a5fa;
+  margin-bottom: 2rem;
+}
+
+.replay-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.replays-list {
+  height: fit-content;
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.replays-list h3 {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.no-replays {
+  text-align: center;
+  color: #64748b;
+  padding: 2rem;
+}
+
+.replay-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.replay-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.replay-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.replay-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+}
+
+.replay-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.replay-id {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.replay-result {
+  color: #60a5fa;
+  font-size: 0.9rem;
+}
+
+.replay-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.replay-player h3 {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.board-placeholder {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 0.5rem;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.replay-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.move-counter {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.moves-list {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.moves-list h4 {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.moves-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.move-item {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  text-align: center;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.move-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.move-item.current {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: #60a5fa;
+  color: #60a5fa;
+  font-weight: 700;
+}
+
+.no-selection {
+  text-align: center;
+  color: #64748b;
+  padding: 4rem 2rem;
+}
+
+@media (max-width: 1024px) {
+  .replay-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .replays-list {
+    max-height: 400px;
+  }
+}

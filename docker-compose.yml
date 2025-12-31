@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autograndmaster-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - shared-models:/models
+      - shared-data:/data
+    environment:
+      - BACKEND_HOST=${BACKEND_HOST:-0.0.0.0}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/autograndmaster.db}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - autograndmaster-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  trainer:
+    build:
+      context: ./trainer
+      dockerfile: Dockerfile
+    container_name: autograndmaster-trainer
+    volumes:
+      - ./trainer:/app
+      - shared-models:/models
+      - shared-data:/data
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - TRAINER_BATCH_SIZE=${TRAINER_BATCH_SIZE:-256}
+      - TRAINER_ITERATIONS=${TRAINER_ITERATIONS:-1000}
+      - TRAINER_SELF_PLAY_GAMES=${TRAINER_SELF_PLAY_GAMES:-100}
+      - TRAINER_MCTS_SIMULATIONS=${TRAINER_MCTS_SIMULATIONS:-800}
+      - TRAINER_CPUCT=${TRAINER_CPUCT:-1.5}
+      - TRAINER_CHECKPOINT_DIR=/models
+      - TRAINER_DATA_DIR=/data
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - autograndmaster-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autograndmaster-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8000}
+    networks:
+      - autograndmaster-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - backend
+
+  gitops:
+    build:
+      context: ./gitops
+      dockerfile: Dockerfile
+    container_name: autograndmaster-gitops
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/repo
+    environment:
+      - GITOPS_POLL_INTERVAL=${GITOPS_POLL_INTERVAL:-30}
+      - GITOPS_ENABLE_AUTO_PULL=${GITOPS_ENABLE_AUTO_PULL:-true}
+      - GITOPS_ENABLE_AUTO_DEPLOY=${GITOPS_ENABLE_AUTO_DEPLOY:-true}
+      - GITOPS_ENABLE_AUTO_COMMIT=${GITOPS_ENABLE_AUTO_COMMIT:-true}
+      - GITOPS_ENABLE_AUTO_PUSH=${GITOPS_ENABLE_AUTO_PUSH:-false}
+      - GIT_USER_NAME=${GIT_USER_NAME:-AutoGrandmaster Bot}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-bot@autograndmaster.local}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - autograndmaster-net
+    restart: unless-stopped
+
+volumes:
+  shared-models:
+  shared-data:
+
+networks:
+  autograndmaster-net:
+    driver: bridge

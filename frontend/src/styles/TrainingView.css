@@ -1,0 +1,177 @@
+.training-view {
+  width: 100%;
+}
+
+.training-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.training-header h1 {
+  color: #60a5fa;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.connected {
+  background: #10b981;
+}
+
+.status-indicator.disconnected {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.stat-card h3 {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stat-value {
+  color: #60a5fa;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.charts-section {
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  padding: 1.5rem;
+}
+
+.chart-card h3 {
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.games-section {
+  margin-bottom: 2rem;
+}
+
+.no-games {
+  text-align: center;
+  color: #64748b;
+  padding: 2rem;
+}
+
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.game-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.game-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.game-id {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.game-result {
+  color: #60a5fa;
+  font-size: 0.9rem;
+}
+
+.game-moves {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.info-section {
+  margin-top: 2rem;
+}
+
+.info-section p {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.info-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.info-section li {
+  color: #cbd5e1;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.info-section li:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+}
